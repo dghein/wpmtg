@@ -1,0 +1,19 @@
+{
+    "name": "dustinhein/wpmtg",
+    "description": "Magic: The Gathering visual card spoiler plugin for WordPress",
+    "type":"wordpress-plugin",
+    "minimum-stability" : "stable",
+    "authors": [
+      {
+        "email": "dustin@dustinsmodern.life",
+        "name": "dghein"
+      }  
+    ],
+    "repositories": [
+      {
+        "type": "composer",
+        "url": "https://wpackagist.org"
+      }
+    ],
+    "require": {}
+  }
