@@ -5,7 +5,7 @@ Plugin Name:  wpmtg
 Description:  A Magic: The Gathering plugin
 Plugin URI:   https://dustinsmodern.life
 Author:       Dustin Hein
-Version:      0.1.1
+Version:      0.1.11
 License:      GPL v2 or later
 License URI:  https://www.gnu.org/licenses/gpl-2.0.txt
 */
@@ -20,11 +20,10 @@ register_deactivation_hook(__FILE__, 'wpmtg_deactivate');
 
 /**
  * Plugin Deactivation
- * - Blows database table(s) away
  */
 function wpmtg_deactivate()
 {
-    // (https://developer.wordpress.org/plugins/plugin-basics/uninstall-methods/)
+    // https://developer.wordpress.org/plugins/plugin-basics/uninstall-methods/
 }
 
 /**
@@ -105,11 +104,19 @@ function wpmtg_save_card_data($set_data)
         );
 
         $new_post = wp_insert_post($post_data);
+
+        // Define taxonomy term using 3-letter set abbreviation
         wp_set_object_terms($new_post, $card_data->set, 'wpmtg_card_setname');
 
         // get thumbnail image and then assign to post
         $thumbnail = wpmtg_fetch_card_thumbnails($card_data, 'card_image_sm');
         set_post_thumbnail($new_post, $thumbnail);
+        
+        add_post_meta($new_post, 'set_name', $card_data->set_name);
+
+        $new_post_custom_fields = get_post_meta($new_post);
+        var_dump($new_post_custom_fields);
+        die;
     }
 
     flush_rewrite_rules();
@@ -207,6 +214,7 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
 
     curl_close($ch);
     fclose($fp);
+
     return $attach_id;
 }
 
@@ -225,7 +233,7 @@ function wpmtg_register_card_post_type()
                     'slug' => 'card/%wpmtg_card_setname%',
                     'with_front' => false
                 ),
-                'supports' => array('title', 'editor', 'thumbnail')
+                'supports' => array('title', 'editor', 'thumbnail', 'custom-fields')
         )
     );
 
@@ -251,12 +259,89 @@ function wpmtg_magiccard_permalink_structure($post_link, $post)
     if (false !== strpos($post_link, '%wpmtg_card_setname%')) {
         $projectscategory_type_term = get_the_terms($post->ID, 'wpmtg_card_setname');
         if (!empty($projectscategory_type_term)) {
-            $post_link = str_replace('%wpmtg_card_setname%', array_pop($projectscategory_type_term)->
-            slug, $post_link);
+            $post_link = str_replace('%wpmtg_card_setname%', array_pop($projectscategory_type_term)->slug, $post_link);
         } else {
             $post_link = str_replace('%wpmtg_card_setname%', 'uncategorized', $post_link);
         }
     }
+
     return $post_link;
 }
 add_filter('post_type_link', 'wpmtg_magiccard_permalink_structure', 10, 4);
+
+/**
+ * CUSTOM FIELDS: Set up metaboxes for Card post type
+ * https://wptheming.com/2010/08/custom-metabox-for-post-type/
+ */
+function wpmtg_magiccard_custom_fields()
+{
+    add_meta_box(
+        'wpmtg_magiccard_custom_fields',
+        __('Card Details'),
+        'wpmtg_magiccard_render_custom_fields',
+        'wpmtg_magiccard'
+    );
+}
+add_action('add_meta_boxes', 'wpmtg_magiccard_custom_fields');
+
+/**
+ * CUSTOM FIELDS: Render fields inside the "Card Details" metabox
+ */
+function wpmtg_magiccard_render_custom_fields()
+{
+    global $post;
+
+    // Nonce field to validate form request came from current site
+    wp_nonce_field(basename(__FILE__), 'wpmtg_magiccard_custom_fields');
+
+    // Get the card information, which should already be populated by the card import script
+    $set_name = get_post_meta($post->ID, 'set_name', true);
+
+    // Output the field
+    echo '<label for="txtSetName">' . __('Set Name') . '</label>';
+    echo '<input type="text" id="txtSetName" name="set_name" value="' . esc_textarea($set_name)  . '" class="widefat">';
+}
+
+/**
+ * CUSTOM FIELDS: Save the metabox data
+ */
+function wpmtg_save_magiccard_meta($post_id, $post)
+{
+
+    if (! current_user_can('edit_post', $post_id)) {
+        return $post_id;
+    }
+
+    // Verify this came from the our screen and with proper authorization,
+    // because save_post can be triggered at other times.
+    if (! isset($_POST['set_name']) || ! wp_verify_nonce($_POST['wpmtg_magiccard_custom_fields'], basename(__FILE__))) {
+        return $post_id;
+    }
+
+    // Now that we're authenticated, time to save the data.
+    // This sanitizes the data from the field and saves it into an array $events_meta.
+    $card_meta['set_name'] = esc_textarea($_POST['set_name']);
+
+    // Cycle through the $events_meta array.
+    // Note, in this example we just have one item, but this is helpful if you have multiple.
+    foreach ($card_meta as $key => $value) :
+        // Don't store custom data twice
+        if ('revision' === $post->post_type) {
+            return;
+        }
+
+        if (get_post_meta($post_id, $key, false)) {
+            // If the custom field already has a value, update it.
+            update_post_meta($post_id, $key, $value);
+        } else {
+            // If the custom field doesn't have a value, add it.
+            add_post_meta($post_id, $key, $value);
+        }
+
+        if (!$value) {
+            // Delete the meta key if there's no value
+            delete_post_meta($post_id, $key);
+        }
+    endforeach;
+}
+add_action('save_post', 'wpmtg_save_magiccard_meta', 1, 2);
