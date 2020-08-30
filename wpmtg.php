@@ -5,7 +5,7 @@ Plugin Name:  wpmtg
 Description:  A Magic: The Gathering plugin
 Plugin URI:   https://dustinsmodern.life
 Author:       Dustin Hein
-Version:      0.0.11
+Version:      0.1.14
 License:      GPL v2 or later
 License URI:  https://www.gnu.org/licenses/gpl-2.0.txt
 */
@@ -276,8 +276,8 @@ function wpmtg_register_card_post_type()
         'wpmtg_magiccard',
         array(
             'labels'      => array(
-                'name'          => __('Cards', 'wpmtg'),
-                'singular_name' => __('Card', 'wpmtg'),
+                'name'          => __('Magic Cards', 'wpmtg'),
+                'singular_name' => __('Magic Card', 'wpmtg'),
             ),
                 'public'      => true,
                 'has_archive' => 'cards',
@@ -296,7 +296,8 @@ function wpmtg_register_card_post_type()
             'rewrite' => array(
                 'slug' => 'set',
                 'with_front' => false
-            )
+            ),
+            'show_in_nav_menus' => true
         )
     );
 }
