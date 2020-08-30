@@ -38,7 +38,8 @@ function wpmtg_activate()
     wpmtg_register_card_post_type();
 
     // get card data from Scryfall
-    wpmtg_get_cards_from_api();
+    // considering removing this from activation
+    // wpmtg_get_cards_from_api();
 }
 
 /**
@@ -58,6 +59,15 @@ function wpmtg_get_cards_from_api($set = 'lea')
         $next_page  = $set_json->next_page;
         $more_set_json = wpmtg_fetch_scryfall_cards($next_page);
         wpmtg_save_card_data($more_set_json);
+        
+        // not likely for a single set... probably a more elegant way to go about this
+        $has_even_more = $more_set_json->has_more;
+
+        if ($has_even_more) {
+            $next_page  = $more_set_json->next_page;
+            $even_more_set_json = wpmtg_fetch_scryfall_cards($next_page);
+            wpmtg_save_card_data($even_more_set_json);
+        }
     }
 }
 
@@ -93,67 +103,72 @@ function wpmtg_save_card_data($set_data)
 
     // make a post for each card
     foreach ($set_data->data as $card_data) {
-        $post_data = array(
+        // error check for existing post of type `wpmtg_magiccard` of the same name
+        // if duplicate exists, check set taxonomy. if that also matches, then
+        // don't insert the post because it will be a duplicate of an existing post
+        $post_exists = post_exists($card_data->name, '', '', 'wpmtg_magiccard');
+
+        if ($post_exists) {
+            // check for that post's taxonomy term
+            $terms = wp_get_object_terms($post_exists, 'wpmtg_card_setname');
+            
+            if ($terms[0]->slug === $card_data->set) {
+                // skip this iteration of foreach loop
+                continue;
+            }
+        } else {
+            $post_data = array(
             'post_author' => $user_ID,
             'post_date' => date('Y-m-d H:i:s'),
             'post_title' => $card_data->name,
-            'post_content' => $card_data->oracle_text,
             'post_status' => 'publish',
             'post_type' => 'wpmtg_magiccard',
             'supports' => array('thumbnail')
-        );
+            );
+    
+            $new_post = wp_insert_post($post_data);
+    
+            // Define taxonomy term using 3-letter set abbreviation
+            wp_set_object_terms($new_post, $card_data->set_name, 'wpmtg_card_setname');
+    
+            // get thumbnail images and then assign to the post
+            $card_image = wpmtg_fetch_card_thumbnails($card_data, 'png');
 
-        $new_post = wp_insert_post($post_data);
+            set_post_thumbnail($new_post, $card_image);
+            $card_image_path = wp_get_attachment_url($card_image);
+            
+            // populate custom fields
+            add_post_meta($new_post, 'artist', $card_data->artist);
+            add_post_meta($new_post, 'card_image', $card_image_path);
+            add_post_meta($new_post, 'card_text', $card_data->oracle_text);
+            add_post_meta($new_post, 'mana_cost', $card_data->mana_cost);
+            add_post_meta($new_post, 'rarity', $card_data->rarity);
+            add_post_meta($new_post, 'set', $card_data->set);
+            add_post_meta($new_post, 'set_name', $card_data->set_name);
+            add_post_meta($new_post, 'type', $card_data->type_line);
+            add_post_meta($new_post, 'released', $card_data->released_at);
 
-        // Define taxonomy term using 3-letter set abbreviation
-        wp_set_object_terms($new_post, $card_data->set, 'wpmtg_card_setname');
+            // flavor text may or may not exist
+            $flavor_text = isset($card_data->flavor_text);
+            $flavor_text ? add_post_meta($new_post, 'flavor_text', $card_data->flavor_text) : '';
 
-        // get thumbnail image and then assign to post
-        $thumbnail = wpmtg_fetch_card_thumbnails($card_data, 'card_image_sm');
-        set_post_thumbnail($new_post, $thumbnail);
-        
-        add_post_meta($new_post, 'set_name', $card_data->set_name);
+            // card color(s)
+            if (!empty($card_data->colors)) {
+                $colors = implode('', $card_data->colors);
+                add_post_meta($new_post, 'colors', $colors);
+            }
+                
+            // tcgplayer purchase uri
+            $flavor_text = isset($card_data->purchase_uris->tcgplayer);
+            $flavor_text ? add_post_meta($new_post, 'tcgplayer_purchase_uri', $card_data->purchase_uris->tcgplayer) : '';
 
-        $new_post_custom_fields = get_post_meta($new_post);
-        var_dump($new_post_custom_fields);
-        die;
+            // Yoast SEO
+            $meta_description = $card_data->name . ' from ' . $card_data->set_name . ', released for Magic: The Gathering ' . $card_data->released_at;
+            update_post_meta($new_post, '_yoast_wpseo_metadesc', $meta_description);
+        };
     }
 
     flush_rewrite_rules();
-}
-
-/**
- * Make menu item(s) in the WP Admin
- */
-function wpmtg_create_admin_menu_item()
-{
-    add_menu_page('WPMTG', 'WPMTG', 'manage_options', 'wpmtg', 'wpmtg_options_page');
-}
-add_action('admin_menu', 'wpmtg_create_admin_menu_item');
-
-/**
- * Options page content with lots of useful things
- * Current List of Useful Things:
- * - Button to fetch card images and store locally in uploads directory
- */
-function wpmtg_options_page()
-{
-    if (!current_user_can('manage_options')) {
-        wp_die(__('You do not have sufficient permissions to access this page.'));
-    }
-
-    // check to see if we're downloading cards, and if we are, download them
-    if (isset($_POST['set']) && !empty($_POST['set'])) {
-        wpmtg_get_cards_from_api($_POST['set']);
-    }
-
-    // the back-end form used to download card images
-    echo '<div class="wrap">';
-    echo '  <form action="" method="post">';
-    echo '    <input type="text" name="set">';
-    echo '    <input type="submit" value="Import Set Data">';
-    echo '  </form>';
-    echo '</div>';
 }
 
 /**
@@ -163,7 +178,7 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
 {
     // figure out where images are going to be stored
     $upload_dir = wp_upload_dir();
-
+    
     // wpmtg base uploads folder /uploads/wpmtg
     $base_dirname = $upload_dir['basedir'] . '/' . "wpmtg";
 
@@ -172,8 +187,8 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
         wp_mkdir_p($base_dirname);
     }
 
-    // retrieve card iamges from remote and write to local file system
-    $card_remote_uri = $card->image_uris->normal;
+    // retrieve card images from remote and write to local file system
+    $card_remote_uri = $card->image_uris->$thumbnail_size;
     $card_set = $card->set;
 
     $ch = curl_init($card_remote_uri);
@@ -181,7 +196,9 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
     // generate a nice-ish filename and start doing file system stuff
     // wpmtg base uploads folder /uploads/wpmtg/*CARD SET*/*THUMBNAIL SIZE*/
     $base_set_dirname = $upload_dir['basedir'] . '/' . 'wpmtg' . '/' . $card_set . '/' . $thumbnail_size;
-    $card_nicename = $card_set . '_' . str_replace([' ', '\'', ','], ['_', '', ''], $card->name)  . '.jpg'; // card slug
+    $image_pathinfo = pathinfo($card_remote_uri);
+    $extension = preg_replace('/[0-9]+/', '', $image_pathinfo['extension']); // remove query string from end of filename
+    $card_nicename = $card_set . '_' . str_replace([' ', '\'', ','], ['_', '', ''], $card->name)  . '.' . $extension; // card slug
     $card_nicename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $card_nicename);
     $card_image_path = $base_set_dirname . '/' . $card_nicename; // full path including filename
 
@@ -216,6 +233,41 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
     fclose($fp);
 
     return $attach_id;
+}
+
+/**
+ * Make menu item(s) in the WP Admin
+ */
+function wpmtg_create_admin_menu_item()
+{
+    add_menu_page('WPMTG', 'WPMTG', 'manage_options', 'wpmtg', 'wpmtg_options_page');
+}
+add_action('admin_menu', 'wpmtg_create_admin_menu_item');
+
+/**
+ * Options page content with lots of useful things
+ * Current List of Useful Things:
+ * - Button to fetch card images and store locally in uploads directory
+ */
+function wpmtg_options_page()
+{
+    if (!current_user_can('manage_options')) {
+        wp_die(__('You do not have sufficient permissions to access this page.'));
+    }
+
+    // check to see if we're downloading cards, and if we are, download them
+    if (isset($_POST['set']) && !empty($_POST['set'])) {
+        ini_set('max_execution_time', '300'); //300 seconds
+        wpmtg_get_cards_from_api($_POST['set']);
+    }
+
+    // the back-end form used to download card images
+    echo '<div class="wrap">';
+    echo '  <form action="" method="post">';
+    echo '    <input type="text" name="set" maxlength="3">';
+    echo '    <input type="submit" value="Import Set Data">';
+    echo '  </form>';
+    echo '</div>';
 }
 
 function wpmtg_register_card_post_type()
@@ -272,6 +324,7 @@ add_filter('post_type_link', 'wpmtg_magiccard_permalink_structure', 10, 4);
 /**
  * CUSTOM FIELDS: Set up metaboxes for Card post type
  * https://wptheming.com/2010/08/custom-metabox-for-post-type/
+ * https://www.mugo.ca/Blog/Adding-complex-fields-to-WordPress-custom-post-types
  */
 function wpmtg_magiccard_custom_fields()
 {
@@ -295,11 +348,46 @@ function wpmtg_magiccard_render_custom_fields()
     wp_nonce_field(basename(__FILE__), 'wpmtg_magiccard_custom_fields');
 
     // Get the card information, which should already be populated by the card import script
+    $artist = get_post_meta($post->ID, 'artist', true);
+    $card_image = get_post_meta($post->ID, 'card_image', true);
+    $card_text = get_post_meta($post->ID, 'card_text', true);
+    $colors = get_post_meta($post->ID, 'colors', true);
+    $mana_cost = get_post_meta($post->ID, 'mana_cost', true);
+    $rarity = get_post_meta($post->ID, 'rarity', true);
+    $released = get_post_meta($post->ID, 'released', true);
     $set_name = get_post_meta($post->ID, 'set_name', true);
+    $tcgplayer_purchase_uri = get_post_meta($post->ID, 'tcgplayer_purchase_uri', true);
+    $type = get_post_meta($post->ID, 'type', true);
 
-    // Output the field
+    echo '<label for="txtAreaCardText">' . __('Card Text') . '</label>';
+    echo '<textarea id="txtAreaCardText" name="card_text" class="widefat" rows="6" readonly>' . esc_textarea($card_text) . '</textarea>';
+
     echo '<label for="txtSetName">' . __('Set Name') . '</label>';
-    echo '<input type="text" id="txtSetName" name="set_name" value="' . esc_textarea($set_name)  . '" class="widefat">';
+    echo '<input type="text" id="txtSetName" name="set_name" value="' . esc_textarea($set_name)  . '" class="widefat" readonly>';
+    
+    echo '<label for="txtType">' . __('Card Type') . '</label>';
+    echo '<input type="text" id="txtType" name="type" value="' . esc_textarea($type)  . '" class="widefat" readonly>';
+
+    echo '<label for="txtColors">' . __('Card Colors') . '</label>';
+    echo '<input type="text" id="txtColors" name="Colors" value="' . esc_textarea($colors)  . '" class="widefat" readonly>';
+    
+    echo '<label for="txtManaCost">' . __('Mana Cost') . '</label>';
+    echo '<input type="text" id="txtManaCost" name="ManaCost" value="' . esc_textarea($mana_cost)  . '" class="widefat" readonly>';
+
+    echo '<label for="txtRarity">' . __('Rarity') . '</label>';
+    echo '<input type="text" id="txtRarity" name="rarity" value="' . esc_textarea($rarity)  . '" class="widefat" readonly>';
+    
+    echo '<label for="txtArtist">' . __('Artist') . '</label>';
+    echo '<input type="text" id="txtArtist" name="artist" value="' . esc_textarea($artist)  . '" class="widefat" readonly>';
+
+    echo '<label for="txtReleased">' . __('Released') . '</label>';
+    echo '<input type="text" id="txtReleased" name="released" value="' . esc_textarea($released)  . '" class="widefat" readonly>';
+
+    echo '<label for="txtTCGPlayerPurchaseURI">' . __('TCGPlayer Link') . '</label>';
+    echo '<input type="text" id="txtTCGPlayerPurchaseURI" name="tcgplayer_purchase_uri" value="' . esc_textarea($tcgplayer_purchase_uri)  . '" class="widefat" readonly>';
+    
+    echo '<label for="txtCardImageUrl">' . __('Card Image URL') . '</label>';
+    echo '<input type="text" id="txtCardImage" name="card_image" value="' . esc_textarea($card_image)  . '" class="widefat" readonly>';
 }
 
 /**
@@ -320,9 +408,12 @@ function wpmtg_save_magiccard_meta($post_id, $post)
 
     // Now that we're authenticated, time to save the data.
     // This sanitizes the data from the field and saves it into an array $events_meta.
-    $card_meta['set_name'] = esc_textarea($_POST['set_name']);
+    // NOTE: 08/29/2020 I'm disabling this because all  of the fields are read only.
+    // In the future, we'll want to add some code here to be able to
+    // save changes to custom fields that are added later down the road
+    //$card_meta['set_name'] = esc_textarea($_POST['set_name']);
 
-    // Cycle through the $events_meta array.
+    // Cycle through the $card_meta array.
     // Note, in this example we just have one item, but this is helpful if you have multiple.
     foreach ($card_meta as $key => $value) :
         // Don't store custom data twice
