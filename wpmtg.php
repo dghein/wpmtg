@@ -198,7 +198,11 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
     $base_set_dirname = $upload_dir['basedir'] . '/' . 'wpmtg' . '/' . $card_set . '/' . $thumbnail_size;
     $image_pathinfo = pathinfo($card_remote_uri);
     $extension = preg_replace('/[0-9]+/', '', $image_pathinfo['extension']); // remove query string from end of filename
-    $card_nicename = $card_set . '_' . str_replace([' ', '\'', ','], ['_', '', ''], $card->name)  . '.' . $extension; // card slug
+    if (!$extension) {
+        $extension = 'png';
+    }
+    $card_name = $card_set . '_' . str_replace([' ', '\'', ','], ['_', '', ''], $card->name);
+    $card_nicename = stripslashes($card_name) . '.' . $extension; // card slug
     $card_nicename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $card_nicename);
     $card_image_path = $base_set_dirname . '/' . $card_nicename; // full path including filename
 
