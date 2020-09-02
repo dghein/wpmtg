@@ -187,9 +187,16 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
         wp_mkdir_p($base_dirname);
     }
 
-    // retrieve card images from remote and write to local file system
-    $card_remote_uri = $card->image_uris->$thumbnail_size;
     $card_set = $card->set;
+
+    // retrieve card images from remote and write to local file system
+    if (!empty($card->card_faces)) {
+        $card_front = $card->card_faces[0]->image_uris->png;
+        $card_back = $card->card_faces[1]->image_uris->png;
+        $card_remote_uri = $card_front;
+    } else {
+        $card_remote_uri = $card->image_uris->$thumbnail_size;
+    }
 
     $ch = curl_init($card_remote_uri);
 
@@ -197,14 +204,14 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
     // wpmtg base uploads folder /uploads/wpmtg/*CARD SET*/*THUMBNAIL SIZE*/
     $base_set_dirname = $upload_dir['basedir'] . '/' . 'wpmtg' . '/' . $card_set . '/' . $thumbnail_size;
     $image_pathinfo = pathinfo($card_remote_uri);
-    $extension = preg_replace('/[0-9]+/', '', $image_pathinfo['extension']); // remove query string from end of filename
+    $extension = preg_replace('/\?[0-9]+/', '', $image_pathinfo['extension']); // remove query string from end of filename
     if (!$extension) {
         $extension = 'png';
     }
-    $card_name = $card_set . '_' . str_replace([' ', '\'', ','], ['_', '', ''], $card->name);
-    $card_nicename = stripslashes($card_name) . '.' . $extension; // card slug
-    $card_nicename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $card_nicename);
-    $card_image_path = $base_set_dirname . '/' . $card_nicename; // full path including filename
+    $card_name = $card_set . '_' . str_replace([' ', '\'', ',', '/'], ['_', '', '', ''], $card->name);
+    $card_nicename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $card_name);
+    $card_nicername = $card_nicename . '.' . $extension;
+    $card_image_path = $base_set_dirname . '/' . $card_nicername; // full path including filename
 
         // make directory if it doesn't exist
     if (!file_exists($base_set_dirname)) {
