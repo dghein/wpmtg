@@ -193,55 +193,70 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
     if (!empty($card->card_faces)) {
         $card_front = $card->card_faces[0]->image_uris->png;
         $card_back = $card->card_faces[1]->image_uris->png;
-        $card_remote_uri = $card_front;
+        $double_sided = true;
+        $card_remote_uri = [$card_front, $card_back];
     } else {
-        $card_remote_uri = $card->image_uris->$thumbnail_size;
+        $double_sided = false;
+        $card_remote_uri = [$card->image_uris->$thumbnail_size];
     }
 
-    $ch = curl_init($card_remote_uri);
+    $i = 0;
+    
+    foreach ($card_remote_uri as $card_face) {
+        $ch = curl_init($card_face);
 
-    // generate a nice-ish filename and start doing file system stuff
-    // wpmtg base uploads folder /uploads/wpmtg/*CARD SET*/*THUMBNAIL SIZE*/
-    $base_set_dirname = $upload_dir['basedir'] . '/' . 'wpmtg' . '/' . $card_set . '/' . $thumbnail_size;
-    $image_pathinfo = pathinfo($card_remote_uri);
-    $extension = preg_replace('/\?[0-9]+/', '', $image_pathinfo['extension']); // remove query string from end of filename
-    if (!$extension) {
-        $extension = 'png';
+        // generate a nice-ish filename and start doing file system stuff
+        // wpmtg base uploads folder /uploads/wpmtg/*CARD SET*/*THUMBNAIL SIZE*/
+        $base_set_dirname = $upload_dir['basedir'] . '/' . 'wpmtg' . '/' . $card_set . '/' . $thumbnail_size;
+        $image_pathinfo = pathinfo($card_face);
+        $extension = preg_replace('/\?[0-9]+/', '', $image_pathinfo['extension']); // remove query string from end of filename
+        if (!$extension) {
+            $extension = 'png';
+        }
+
+        // name comes from somewhere else if double-sided
+        if ($double_sided) {
+            $card_name = $card->card_faces[$i]->name;
+        } else {
+            $card_name = $card_set . '_' . str_replace([' ', '\'', ',', '/'], ['_', '', '', ''], $card->name);
+        }
+
+        $card_nicename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $card_name);
+        $card_nicername = $card_nicename . '.' . $extension;
+        $card_image_path = $base_set_dirname . '/' . $card_nicername; // full path including filename
+
+            // make directory if it doesn't exist
+        if (!file_exists($base_set_dirname)) {
+            wp_mkdir_p($base_set_dirname);
+        }
+
+        $fp = fopen($card_image_path, 'wb');
+
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_FILE, $fp);
+
+        $result = curl_exec($ch);
+
+        $wp_filetype = wp_check_filetype($card_image_path, null);
+
+        $attachment = array(
+            'post_mime_type' => $wp_filetype['type'],
+            'post_title' => sanitize_file_name($card_image_path),
+            'post_content' => '',
+            'post_status' => 'inherit'
+        );
+
+        $attach_id = wp_insert_attachment($attachment, $card_image_path);
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        $attach_data = wp_generate_attachment_metadata($attach_id, $card_image_path);
+        $attachment = wp_update_attachment_metadata($attach_id, $attach_data);
+
+        curl_close($ch);
+        fclose($fp);
+
+        $i++;
     }
-    $card_name = $card_set . '_' . str_replace([' ', '\'', ',', '/'], ['_', '', '', ''], $card->name);
-    $card_nicename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $card_name);
-    $card_nicername = $card_nicename . '.' . $extension;
-    $card_image_path = $base_set_dirname . '/' . $card_nicername; // full path including filename
-
-        // make directory if it doesn't exist
-    if (!file_exists($base_set_dirname)) {
-        wp_mkdir_p($base_set_dirname);
-    }
-
-    $fp = fopen($card_image_path, 'wb');
-
-    curl_setopt($ch, CURLOPT_HEADER, 0);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_FILE, $fp);
-
-    $result = curl_exec($ch);
-
-    $wp_filetype = wp_check_filetype($card_image_path, null);
-
-    $attachment = array(
-        'post_mime_type' => $wp_filetype['type'],
-        'post_title' => sanitize_file_name($card_image_path),
-        'post_content' => '',
-        'post_status' => 'inherit'
-    );
-
-    $attach_id = wp_insert_attachment($attachment, $card_image_path);
-    require_once(ABSPATH . 'wp-admin/includes/image.php');
-    $attach_data = wp_generate_attachment_metadata($attach_id, $card_image_path);
-    $attachment = wp_update_attachment_metadata($attach_id, $attach_data);
-
-    curl_close($ch);
-    fclose($fp);
 
     return $attach_id;
 }
