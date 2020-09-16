@@ -5,7 +5,7 @@ Plugin Name:  wpmtg
 Description:  A Magic: The Gathering plugin
 Plugin URI:   https://dustinsmodern.life
 Author:       Dustin Hein
-Version:      0.1.18
+Version:      0.1.19
 License:      GPL v2 or later
 License URI:  https://www.gnu.org/licenses/gpl-2.0.txt
 */
@@ -134,13 +134,21 @@ function wpmtg_save_card_data($set_data)
             // get thumbnail images and then assign to the post
             $card_image = wpmtg_fetch_card_thumbnails($card_data, 'png');
 
+            // check if double-sided
+            !empty($card_data->card_faces) ? $double_sided = true : $double_sided = false;
+
             set_post_thumbnail($new_post, $card_image);
             $card_image_path = wp_get_attachment_url($card_image);
             
             // populate custom fields
             add_post_meta($new_post, 'artist', $card_data->artist);
             add_post_meta($new_post, 'card_image', $card_image_path);
-            add_post_meta($new_post, 'card_text', $card_data->oracle_text);
+            if (!$double_sided) {
+                add_post_meta($new_post, 'card_text', $card_data->oracle_text);
+            } else {
+                $card_text = $card_data->card_faces[0]->oracle_text . '<br>' . $card_data->card_faces[1]->oracle_text;
+                add_post_meta($new_post, 'card_text', $card_text);
+            }
             add_post_meta($new_post, 'mana_cost', $card_data->mana_cost);
             add_post_meta($new_post, 'rarity', $card_data->rarity);
             add_post_meta($new_post, 'set', $card_data->set);
@@ -189,7 +197,6 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
 
     $card_set = $card->set;
 
-    // retrieve card images from remote and write to local file system
     if (!empty($card->card_faces)) {
         $card_front = $card->card_faces[0]->image_uris->png;
         $card_back = $card->card_faces[1]->image_uris->png;
@@ -200,8 +207,9 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
         $card_remote_uri = [$card->image_uris->$thumbnail_size];
     }
 
-    $i = 0;
-    
+    // retrieve card images from remote and write to local file system
+    $i = 0; // counter because of sloppy coding :P
+
     foreach ($card_remote_uri as $card_face) {
         $ch = curl_init($card_face);
 
