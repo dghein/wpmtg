@@ -275,9 +275,17 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
 function wpmtg_create_admin_menu_item()
 {
     add_menu_page('WPMTG', 'WPMTG', 'manage_options', 'wpmtg', 'wpmtg_options_page');
-    remove_meta_box( 'postcustom', 'wpmtg_magiccard', 'normal' );
 }
 add_action('admin_menu', 'wpmtg_create_admin_menu_item');
+
+/**
+ * Disable Custom Fields Metabox
+ */
+function wpmtg_hide_custom_fields_metabox()
+{
+    remove_meta_box('postcustom', 'wpmtg_magiccard', 'normal');
+}
+add_action('add_meta_boxes', 'wpmtg_hide_custom_fields_metabox');
 
 /**
  * Options page content with lots of useful things
