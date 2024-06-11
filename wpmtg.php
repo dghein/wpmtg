@@ -202,13 +202,24 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
 
     $card_set = $card->set;
 
-    if (!empty($card->card_faces)) {
-        $card_front = $card->card_faces[0]->image_uris->png;
-        $card_back = $card->card_faces[1]->image_uris->png;
-        $double_sided = true;
-        $card_remote_uri = [$card_front, $card_back];
+    $double_sided = false;
+
+    // card faces means either double-sided card or story card.
+    // having multiple card faces does not necessarily mean there are two sides or two separate images
+    // note: double sided card comes with property: "layout": "modal_dfc"
+    if (!empty($card->card_faces) && is_array($card->card_faces)) {
+        if (isset($card->card_faces[0]->image_uris) && isset($card->card_faces[1]->image_uris)) {
+            // front face card image
+            $card_front = $card->card_faces[0]->image_uris->$thumbnail_size;
+            // back face card image
+            $card_back = $card->card_faces[1]->image_uris->$thumbnail_size;
+
+            $double_sided = true;
+            $card_remote_uri = [$card_front, $card_back];
+        } else {
+            $card_remote_uri = [$card->image_uris->$thumbnail_size];
+        }
     } else {
-        $double_sided = false;
         $card_remote_uri = [$card->image_uris->$thumbnail_size];
     }
 
