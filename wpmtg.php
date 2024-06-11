@@ -143,13 +143,18 @@ function wpmtg_save_card_data($set_data)
             // populate custom fields
             add_post_meta($new_post, 'artist', $card_data->artist);
             add_post_meta($new_post, 'card_image', $card_image_path);
+
             if (!$double_sided) {
                 add_post_meta($new_post, 'card_text', $card_data->oracle_text);
             } else {
                 $card_text = $card_data->card_faces[0]->oracle_text . '<br>' . $card_data->card_faces[1]->oracle_text;
                 add_post_meta($new_post, 'card_text', $card_text);
             }
-            add_post_meta($new_post, 'mana_cost', $card_data->mana_cost);
+
+            if (isset($card_data->mana_cost)) {
+                add_post_meta($new_post, 'mana_cost', $card_data->mana_cost);
+            }
+
             add_post_meta($new_post, 'rarity', $card_data->rarity);
             add_post_meta($new_post, 'set', $card_data->set);
             add_post_meta($new_post, 'set_name', $card_data->set_name);
@@ -270,15 +275,6 @@ function wpmtg_fetch_card_thumbnails($card, $thumbnail_size)
 }
 
 /**
- * Make menu item(s) in the WP Admin
- */
-function wpmtg_create_admin_menu_item()
-{
-    add_menu_page('WPMTG', 'WPMTG', 'manage_options', 'wpmtg', 'wpmtg_options_page');
-}
-add_action('admin_menu', 'wpmtg_create_admin_menu_item');
-
-/**
  * Disable Custom Fields Metabox
  */
 function wpmtg_hide_custom_fields_metabox()
@@ -286,6 +282,15 @@ function wpmtg_hide_custom_fields_metabox()
     remove_meta_box('postcustom', 'wpmtg_magiccard', 'normal');
 }
 add_action('add_meta_boxes', 'wpmtg_hide_custom_fields_metabox');
+
+/**
+ * Make menu item(s) in the WP Admin
+ */
+function wpmtg_create_admin_menu_item()
+{
+    add_menu_page('WPMTG', 'WPMTG', 'manage_options', 'wpmtg', 'wpmtg_options_page');
+}
+add_action('admin_menu', 'wpmtg_create_admin_menu_item');
 
 /**
  * Options page content with lots of useful things
