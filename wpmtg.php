@@ -56,19 +56,19 @@ function wpmtg_get_cards_from_api($set = 'lea')
  */
 function wpmtg_fetch_scryfall_cards($endpoint)
 {
-    // initialize curl and specify API endpoint
-    $ch = curl_init();
+    // Make the request to the API endpoint
+    $response = wp_remote_get($endpoint);
 
-    // set curl options
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Return the response as a string instead of outputting it
-    curl_setopt($ch, CURLOPT_URL, $endpoint); // Set the url
+    // Check for any errors in the response
+    if (is_wp_error($response)) {
+        return null;
+    }
 
-    // execute & close
-    $result = curl_exec($ch);
-    curl_close($ch);
+    // Get the body of the response
+    $body = wp_remote_retrieve_body($response);
 
-    // convert to json object
-    $set_json = json_decode($result);
+    // Convert the body to a JSON object
+    $set_json = json_decode($body);
 
     return $set_json;
 }
