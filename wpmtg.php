@@ -15,32 +15,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-register_activation_hook(__FILE__, 'wpmtg_activate');
-register_deactivation_hook(__FILE__, 'wpmtg_deactivate');
+// Register the autoloader for the plugin.
+include_once __DIR__ . '/autoloader.php';
 
-/**
- * Plugin Deactivation
- */
-function wpmtg_deactivate()
-{
-    // https://developer.wordpress.org/plugins/plugin-basics/uninstall-methods/
-}
+use Wpmtg\Wpmtg;
 
-/**
- * Plugin Activation
- * Registers custom post type and associated taxonomy
- * Calls function to hit Scryfall API to populate posts
- */
-function wpmtg_activate()
-{
-    // Regiastered on 'init' hook but also called here as per this example:
-    // https://stackoverflow.com/questions/50810282/create-custom-post-type-when-plugin-is-activated-and-remove-once-deactivated-wo
-    wpmtg_register_card_post_type();
-
-    // get card data from Scryfall
-    // considering removing this from activation
-    // wpmtg_get_cards_from_api();
-}
+$wpmtg = new Wpmtg();
 
 /**
  * Get card data from Scryfall and save card information to posts
@@ -329,51 +309,6 @@ function wpmtg_options_page()
     echo '</div>';
 }
 
-function wpmtg_register_card_post_type()
-{
-    register_post_type(
-        'wpmtg_magiccard',
-        array(
-            'labels'      => array(
-                'name'          => __('Magic Cards', 'wpmtg'),
-                'singular_name' => __('Magic Card', 'wpmtg'),
-            ),
-            'public'      => true,
-            'has_archive' => 'cards',
-            'rewrite' => array(
-                'slug' => 'card/%wpmtg_card_setname%',
-                'with_front' => false
-            ),
-            'supports' => array('title', 'editor', 'thumbnail', 'custom-fields')
-        )
-    );
-
-    register_taxonomy(
-        'wpmtg_card_setname',
-        'wpmtg_magiccard',
-        array(
-            'labels' => array(
-                'name' => 'Card Sets',
-                'singular_name' => 'Card Set',
-                'search_items' => 'Search Card Sets',
-                'popular_items' => 'Popular Card Sets',
-                'all_items' => 'All Card Sets',
-                'edit_item' => 'Edit Card Set',
-                'view_item' => 'View Card Set',
-                'update_item' => 'Update Card Set',
-                'add_new_item' => 'Add New Card Set'
-            ),
-            'rewrite' => array(
-                'slug' => 'set',
-                'with_front' => false
-            ),
-            'query_var' => 'wpmtg_card_setname',
-            'show_in_nav_menus' => true
-        )
-    );
-}
-add_action('init', 'wpmtg_register_card_post_type');
-
 // /**
 //  * Provide front-end template for wpmtg_matgiccard custom post type
 //  *
@@ -562,6 +497,7 @@ function wpmtg_append_card_info_to_post($content, $postmeta)
     $content .= '    <li>Set: ' . $postmeta['set_name'][0] . '</li>';
     $content .= '    <li>Released: ' . $postmeta['released'][0] . '</li>';
     $content .= '    <li>Buy on TCGPlayer: ' . $postmeta['tcgplayer_purchase_uri'][0] . '</li>';
+    $content .= '</ul>';
 
     return $content;
 }
