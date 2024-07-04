@@ -1,3 +1,1 @@
-<?php
-    // it is very quiet
-    
+<?php // it is very quiet
