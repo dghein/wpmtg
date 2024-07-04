@@ -3,14 +3,17 @@
 namespace Wpmtg;
 
 use Wpmtg\WpmtgPost;
+use Wpmtg\WpmtgAdminOptions;
 
 class Wpmtg
 {
+    private $AdminHelper;
     private $PostTypeHelper;
 
     public function __construct()
     {
         $this->PostTypeHelper = new WpmtgPost();
+        $this->AdminHelper = new WpmtgAdminOptions();
 
         $this->addActions();
     }
@@ -29,6 +32,7 @@ class Wpmtg
      */
     private function activate()
     {
+        // TODO: get all of the card sets from API and register as taxonomies
     }
 
     /**
@@ -42,15 +46,14 @@ class Wpmtg
     }
 
     /**
-     * Add actions.
-     *
+     * Add actions for WordPress hooks.
      * All actions should be added through this method.
      *
      * For Actions that will be used in the admin we add "/admin" in the name of the action.
      * @example :
-     *  - add_action('wp-plugin-boilerplate/admin/NAME_ACTION', [CLASS_CONTAIN_METHODE_ACTION, 'METHODE_NAME']);
-     *  - add_action('wp-plugin-boilerplate/NAME_ACTION', [CLASS_CONTAIN_METHODE_ACTION, 'METHODE_NAME']);
-     *  - add_action('wp-plugin-boilerplate/something/NAME_ACTION', [CLASS_CONTAIN_METHODE_ACTION, 'METHODE_NAME']);
+     *  - add_action('wp-plugin-boilerplate/admin/NAME_ACTION', [CLASS_CONTAIN_METHOD_ACTION, 'METHODE_NAME']);
+     *  - add_action('wp-plugin-boilerplate/NAME_ACTION', [CLASS_CONTAIN_METHOD_ACTION, 'METHODE_NAME']);
+     *  - add_action('wp-plugin-boilerplate/something/NAME_ACTION', [CLASS_CONTAIN_METHOD_ACTION, 'METHODE_NAME']);
      *
      * @see : https://developer.wordpress.org/reference/functions/add_action/
      *
@@ -58,6 +61,11 @@ class Wpmtg
      */
     private function addActions()
     {
+        add_action('add_meta_boxes', [$this->PostTypeHelper, 'hideCustomFieldsMetabox']);
+        add_action('add_meta_boxes', [$this->PostTypeHelper, 'magiccardCustomFields']);
         add_action('init', [$this->PostTypeHelper, 'registerWpmtgPostType']);
+        add_filter('post_type_link', [$this->PostTypeHelper, 'magiccardPermalinkStructure'], 10, 4);
+        add_filter('the_content', [$this->PostTypeHelper, 'appendCardToPost']);
+        add_action('admin_menu', [$this->AdminHelper, 'createAdminOptionsPage']);
     }
 }
