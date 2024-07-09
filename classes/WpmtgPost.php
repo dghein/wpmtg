@@ -190,14 +190,14 @@ class WpmtgPost
         $content .= wpautop($postmeta['card_text'][0]);
 
         $content .= '<ul class="wpmtg-magiccard__card-info">';
-        $content .= '    <li>Artist: ' . $postmeta['artist'][0] . '</li>';
-        $content .= '    <li>Colors: ' . $postmeta['colors'][0] . '</li>';
-        $content .= '    <li>Mana Cost: ' . $postmeta['mana_cost'][0] . '</li>';
-        $content .= '    <li>Rarity: ' . $postmeta['rarity'][0] . '</li>';
-        $content .= '    <li>Type: ' . $postmeta['type'][0] . '</li>';
-        $content .= '    <li>Set: ' . $postmeta['set_name'][0] . '</li>';
-        $content .= '    <li>Released: ' . $postmeta['released'][0] . '</li>';
-        $content .= '    <li>Buy on TCGPlayer: ' . $postmeta['tcgplayer_purchase_uri'][0] . '</li>';
+        $content .= isset($postmeta['artist']) ? '<li>Artist: ' . $postmeta['artist'][0] . '</li>' : '';
+        $content .= isset($postmeta['colors']) ? '<li>Colors: ' . $postmeta['colors'][0] . '</li>' : '';
+        $content .= isset($postmeta['mana_cost']) ? '<li>Mana Cost: ' . $postmeta['mana_cost'][0] . '</li>' : '';
+        $content .= isset($postmeta['rarity']) ? '<li>Rarity: ' . $postmeta['rarity'][0] . '</li>' : '';
+        $content .= isset($postmeta['type']) ? '<li>Type: ' . $postmeta['type'][0] . '</li>' : '';
+        $content .= isset($postmeta['set_name']) ? '<li>Set: ' . $postmeta['set_name'][0] . '</li>' : '';
+        $content .= isset($postmeta['released']) ? '<li>Released: ' . $postmeta['released'][0] . '</li>' : '';
+        $content .= isset($postmeta['tcgplayer_purchase_uri']) ? '<li>Buy on TCGPlayer: ' . $postmeta['tcgplayer_purchase_uri'][0] . '</li>' : '';
         $content .= '</ul>';
 
         return $content;
