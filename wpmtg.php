@@ -21,3 +21,6 @@ include_once __DIR__ . '/autoloader.php';
 use Wpmtg\Wpmtg;
 
 $wpmtg = new Wpmtg();
+
+register_activation_hook(__FILE__, [$wpmtg, 'activate']);
+register_deactivation_hook(__FILE__, [$wpmtg, 'deactivate']);

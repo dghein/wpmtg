@@ -263,4 +263,18 @@ class WpmtgApiHelper
 
         return $attach_id;
     }
+
+    /**
+     * Undocumented function
+     *
+     * @param string $endpoint
+     * @return void
+     */
+    public static function getCardSets()
+    {
+        $endpoint = 'https://api.scryfall.com/sets';
+        $setData = self::fetchScryfallData($endpoint);
+
+        return $setData;
+    }
 }

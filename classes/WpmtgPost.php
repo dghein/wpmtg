@@ -2,6 +2,8 @@
 
 namespace Wpmtg;
 
+use Wpmtg\WpmtgApiHelper;
+
 class WpmtgPost
 {
     public function registerWpmtgPostType()
@@ -58,6 +60,22 @@ class WpmtgPost
                 'show_in_nav_menus' => true
             )
         );
+    }
+
+    /**
+     * Create the terms for Magic sets
+     *
+     * @return void
+     */
+    public function createCardSetTerms()
+    {
+        $allSets = WpmtgApiHelper::getCardSets();
+        
+        if ($allSets) {
+            foreach ($allSets->data as $set) {
+                wp_insert_term($set->name, 'wpmtg_card_setname');
+            }
+        }
     }
 
     /**

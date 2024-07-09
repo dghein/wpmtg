@@ -4,6 +4,7 @@ namespace Wpmtg;
 
 use Wpmtg\WpmtgPost;
 use Wpmtg\WpmtgAdminOptions;
+use Wpmtg\WpmtgApiHelper;
 
 class Wpmtg
 {
@@ -18,7 +19,7 @@ class Wpmtg
         $this->addActions();
     }
 
-    private function registerActivationHooks()
+    public function registerActivationHooks()
     {
         register_activation_hook(__FILE__, [$this, 'activate']);
         register_deactivation_hook(__FILE__, [$this, 'deactivate']);
@@ -30,9 +31,12 @@ class Wpmtg
      *
      * @return void
      */
-    private function activate()
+    public function activate()
     {
-        // TODO: get all of the card sets from API and register as taxonomies
+        $this->PostTypeHelper->registerWpmtgPostType();
+
+        // Get all of the card sets from API and register as taxonomies
+        $this->PostTypeHelper->createCardSetTerms();
     }
 
     /**
@@ -41,7 +45,7 @@ class Wpmtg
      *
      * @return void
      */
-    private function deactivate()
+    public function deactivate()
     {
     }
 
