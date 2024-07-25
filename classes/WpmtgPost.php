@@ -221,6 +221,12 @@ class WpmtgPost
         return $content;
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param [type] $post_type
+     * @return void
+     */
     public function filterPostsBySet($post_type)
     {
         if ('wpmtg_magiccard' !== $post_type) {
