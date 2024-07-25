@@ -71,5 +71,8 @@ class Wpmtg
         add_filter('post_type_link', [$this->PostTypeHelper, 'magiccardPermalinkStructure'], 10, 4);
         add_filter('the_content', [$this->PostTypeHelper, 'appendCardToPost']);
         add_action('admin_menu', [$this->AdminHelper, 'createAdminOptionsPage']);
+
+        // sorting & filtering posts in wp admin
+        add_action('restrict_manage_posts', [$this->PostTypeHelper, 'filterPostsBySet']);
     }
 }

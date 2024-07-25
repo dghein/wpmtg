@@ -70,7 +70,7 @@ class WpmtgPost
     public function createCardSetTerms()
     {
         $allSets = WpmtgApiHelper::getCardSets();
-        
+
         if ($allSets) {
             foreach ($allSets->data as $set) {
                 wp_insert_term($set->name, 'wpmtg_card_setname');
@@ -219,5 +219,36 @@ class WpmtgPost
         $content .= '</ul>';
 
         return $content;
+    }
+
+    public function filterPostsBySet($post_type)
+    {
+        if ('wpmtg_magiccard' !== $post_type) {
+            return;
+        }
+
+        $taxonomy_name = 'wpmtg_card_setname';
+
+        // get all terms of a specific taxonomy
+        $sets = get_terms(
+            array(
+                'taxonomy' => $taxonomy_name,
+                'hide_empty' => false
+            )
+        );
+
+        // selected taxonomy from URL
+        $selected = isset($_GET[$taxonomy_name]) && $_GET[$taxonomy_name] ? $_GET[$taxonomy_name] : '';
+
+        if ($sets) {
+            echo '<select name="' . $taxonomy_name . '">';
+            echo '<option value="">All sets</option>';
+            
+            foreach ($sets as $set) {
+                echo '<option value="' . $set->slug . '"' . selected($selected, $set->slug) . '>' . $set->name . '</option>';
+            }
+
+            echo '</select>';
+        }
     }
 }

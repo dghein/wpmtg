@@ -107,7 +107,7 @@ class WpmtgApiHelper
                 wp_set_object_terms($new_post, $card_data->set_name, 'wpmtg_card_setname');
 
                 // get thumbnail images and then assign to the post
-                $card_image = self::fetchCardThumbnails($card_data, 'png');
+                $card_image = self::fetchCardThumbnails($card_data, 'normal');
 
                 // check if double-sided
                 !empty($card_data->card_faces) ? $double_sided = true : $double_sided = false;
