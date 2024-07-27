@@ -236,6 +236,12 @@ class WpmtgApiHelper
             curl_setopt($ch, CURLOPT_FILE, $fp);
     
             $result = curl_exec($ch);
+
+            if (!$result) {
+                echo "<pre>";
+                var_dump(curl_error($ch));
+                echo "</pre>";
+            }
     
             $wp_filetype = wp_check_filetype($card_image_path, null);
     
@@ -273,5 +279,10 @@ class WpmtgApiHelper
         $setData = self::fetchScryfallData($endpoint);
 
         return $setData;
+    }
+
+    public function doApiThings()
+    {
+        $this->fetchScryfallDataAndSave($_REQUEST['set']);
     }
 }

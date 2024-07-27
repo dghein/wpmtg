@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+define('PLUGIN_PATH', plugin_dir_url(__FILE__));
+
 // Register the autoloader for the plugin.
 include_once __DIR__ . '/autoloader.php';
 

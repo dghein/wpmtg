@@ -25,16 +25,14 @@ class WpmtgAdminOptions
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
 
-        // check to see if we're downloading cards, and if we are, download them
-        if (isset($_POST['set']) && !empty($_POST['set'])) {
-            ini_set('max_execution_time', '300'); //300 seconds
-            WpmtgApiHelper::fetchScryfallDataAndSave($_POST['set']);
-        }
+        ini_set('max_execution_time', '300'); //300 seconds
+
 
         // the back-end form used to download card images
         echo '<div class="wrap">';
-        echo '  <form action="" method="post">';
-        echo '    <input type="text" name="set" maxlength="3">';
+        echo '  <form action="" method="post" id="frmImport">';
+        echo '    <input type="hidden" name="action" value="import_wpmtg_card_set">';
+        echo '    <input type="text" name="set">';
         echo '    <input type="submit" value="Import Set Data">';
         echo '  </form>';
         echo '</div>';

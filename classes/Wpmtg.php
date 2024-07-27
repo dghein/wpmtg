@@ -9,12 +9,14 @@ use Wpmtg\WpmtgApiHelper;
 class Wpmtg
 {
     private $AdminHelper;
+    private $ApiHelper;
     private $PostTypeHelper;
 
     public function __construct()
     {
         $this->PostTypeHelper = new WpmtgPost();
         $this->AdminHelper = new WpmtgAdminOptions();
+        $this->ApiHelper = new WpmtgApiHelper();
 
         $this->addActions();
     }
@@ -49,6 +51,12 @@ class Wpmtg
     {
     }
 
+    public function enqueueAdminScripts()
+    {
+        wp_register_script('wpmtg-admin-js', PLUGIN_PATH . '/js/admin.js', array(), '1.0');
+        wp_enqueue_script('wpmtg-admin-js');
+    }
+
     /**
      * Add actions for WordPress hooks.
      * All actions should be added through this method.
@@ -74,5 +82,11 @@ class Wpmtg
 
         // sorting & filtering posts in wp admin
         add_action('restrict_manage_posts', [$this->PostTypeHelper, 'filterPostsBySet']);
+
+        add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
+
+        //ajax stuff
+        add_action('wp_ajax_import_wpmtg_card_set', [$this->ApiHelper, 'doApiThings']);
+        add_action('wp_ajax_nopriv_import_wpmtg_card_set', [$this->ApiHelper, 'doApiThings']);
     }
 }
