@@ -12,12 +12,12 @@ document.addEventListener("DOMContentLoaded", (e) => {
         },
         body: new URLSearchParams(new FormData(wpmtgImportSetForm))
       }).then(response => {
-        return response;
-      }).then(jsonResponse => {
-        console.log(jsonResponse);
+        return response.text();
+      }).then(data => {
+        console.log(data);
         const form = document.querySelector('#frmImport');
         const newDiv = document.createElement('div');
-        newDiv.innerHTML = 'You imported some cards with an ajax request!';
+        newDiv.innerHTML = data;
         form.append(newDiv);
       })
     });

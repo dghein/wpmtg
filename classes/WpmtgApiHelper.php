@@ -284,5 +284,9 @@ class WpmtgApiHelper
     public function doApiThings()
     {
         $this->fetchScryfallDataAndSave($_REQUEST['set']);
+
+        $data = '<div>we good!</div>';
+        echo $data;
+        die;
     }
 }
