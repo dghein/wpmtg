@@ -249,12 +249,53 @@ class WpmtgPost
         if ($sets) {
             echo '<select name="' . $taxonomy_name . '">';
             echo '<option value="">All sets</option>';
-            
+
             foreach ($sets as $set) {
                 echo '<option value="' . $set->slug . '"' . selected($selected, $set->slug) . '>' . $set->name . '</option>';
             }
 
             echo '</select>';
         }
+    }
+
+
+    /**
+     * Set-up sortable column in wp-admin
+     * https://www.ractoon.com/articles/wordpress-sortable-admin-columns-for-custom-posts
+     *
+     * @param array $columns
+     * @return void
+     */
+    public function set_custom_edit_mycpt_columns($columns)
+    {
+        $columns['custom_taxonomy'] = __('Set', 'wpmtg_card_setname');
+
+        return $columns;
+    }
+
+    /**
+     * Populate list of the custom taxonomy terms assigned to the post
+     *
+     * @param [type] $column
+     * @param [type] $post_id
+     * @return void
+     */
+    public function custom_mycpt_column($column, $post_id)
+    {
+        $terms = get_the_term_list($post_id, 'wpmtg_card_setname', '', ', ', '');
+        echo is_string($terms) ? $terms : '—';
+    }
+
+    /**
+     * Making custom taxonomy column sortable
+     *
+     * @param [type] $columns
+     * @return void
+     */
+    function set_custom_mycpt_sortable_columns($columns)
+    {
+        $columns['custom_taxonomy'] = 'wpmtg_card_setname';
+
+        return $columns;
     }
 }

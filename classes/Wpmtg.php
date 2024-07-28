@@ -82,7 +82,11 @@ class Wpmtg
 
         // sorting & filtering posts in wp admin
         add_action('restrict_manage_posts', [$this->PostTypeHelper, 'filterPostsBySet']);
+        add_filter('manage_wpmtg_magiccard_posts_columns', [$this->PostTypeHelper, 'set_custom_edit_mycpt_columns']);
+        add_action('manage_wpmtg_magiccard_posts_custom_column', [$this->PostTypeHelper, 'custom_mycpt_column'], 10, 2);
+        add_filter('manage_edit-wpmtg_magiccard_sortable_columns', [$this->PostTypeHelper, 'set_custom_mycpt_sortable_columns']);
 
+        // admin scripts + styles
         add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
 
         //ajax stuff
