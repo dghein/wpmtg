@@ -268,7 +268,13 @@ class WpmtgPost
      */
     public function set_custom_edit_mycpt_columns($columns)
     {
+        $date = $columns['date'];
+        unset($columns['date']);
+
         $columns['custom_taxonomy'] = __('Set', 'wpmtg_card_setname');
+
+        // put date at the end
+        $columns['date'] = $date;
 
         return $columns;
     }
