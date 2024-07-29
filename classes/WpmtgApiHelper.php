@@ -22,7 +22,7 @@ class WpmtgApiHelper
         $set_json = self::fetchScryfallData('https://api.scryfall.com/cards/search?q=set=' . $set);
 
         // make posts for each card
-        self::saveCardData($set_json);
+        $newCards = self::saveCardData($set_json);
 
         // see if there are more results we want beyond the first
         $has_more = $set_json->has_more;
@@ -30,7 +30,7 @@ class WpmtgApiHelper
         if ($has_more) {
             $next_page  = $set_json->next_page;
             $more_set_json = self::fetchScryfallData($next_page);
-            self::saveCardData($more_set_json);
+            $newCards += self::saveCardData($more_set_json);
 
             // not likely for a single set... probably a more elegant way to go about this
             $has_even_more = $more_set_json->has_more;
@@ -38,9 +38,11 @@ class WpmtgApiHelper
             if ($has_even_more) {
                 $next_page  = $more_set_json->next_page;
                 $even_more_set_json = self::fetchScryfallData($next_page);
-                self::saveCardData($even_more_set_json);
+                $newCards += self::saveCardData($even_more_set_json);
             }
         }
+
+        return $newCards;
     }
 
     /**
@@ -76,6 +78,8 @@ class WpmtgApiHelper
     {
         global $user_ID;
 
+        $postsCreated = 0;
+
         // make a post for each card
         foreach ($set_data->data as $card_data) {
             // error check for existing post of type `wpmtg_magiccard` of the same name
@@ -103,8 +107,19 @@ class WpmtgApiHelper
 
                 $new_post = wp_insert_post($post_data);
 
+                if ($new_post) {
+                    $postsCreated++;
+                }
+
+                // Create set taxonomy term if it doesn't already exist
+                if(!term_exists($card_data->set, 'wpmtg_card_setname')) {
+                    wp_insert_term($card_data->set_name, 'wpmtg_card_setname', array(
+                        'slug' => $card_data->set
+                    ));
+                }
+
                 // Define taxonomy term using 3-letter set abbreviation
-                wp_set_object_terms($new_post, $card_data->set_name, 'wpmtg_card_setname');
+                wp_set_object_terms($new_post, $card_data->set, 'wpmtg_card_setname');
 
                 // get thumbnail images and then assign to the post
                 $card_image = self::fetchCardThumbnails($card_data, 'normal');
@@ -157,6 +172,8 @@ class WpmtgApiHelper
         }
 
         flush_rewrite_rules();
+
+        return $postsCreated;
     }
 
     /**
@@ -283,9 +300,9 @@ class WpmtgApiHelper
 
     public function doApiThings()
     {
-        $this->fetchScryfallDataAndSave($_REQUEST['set']);
+        $newCards = $this->fetchScryfallDataAndSave($_REQUEST['set']);
 
-        $data = '<div>we good!</div>';
+        $data = '<div>Successfully imported ' . $newCards . ' cards!</div>';
         echo $data;
         die;
     }
