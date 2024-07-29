@@ -38,7 +38,8 @@ class Wpmtg
         $this->PostTypeHelper->registerWpmtgPostType();
 
         // Get all of the card sets from API and register as taxonomies
-        $this->PostTypeHelper->createCardSetTerms();
+        // Not doing this for now because there are like 900+ sets x_x
+        // $this->PostTypeHelper->createCardSetTerms();
     }
 
     /**
