@@ -13,7 +13,7 @@ class WpmtgAdminOptions
      */
     public function createAdminOptionsPage()
     {
-        add_menu_page('WPMTG', 'WPMTG', 'manage_options', 'wpmtg', [$this, 'adminOptionsPage']);
+        add_submenu_page('edit.php?post_type=wpmtg_magiccard', 'Import Cards', 'Import Cards', 'manage_options', 'wpmtg-card-importer', [$this, 'adminOptionsPage']);
     }
 
     /**
