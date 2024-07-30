@@ -302,7 +302,7 @@ class WpmtgApiHelper
     {
         $newCards = $this->fetchScryfallDataAndSave($_REQUEST['set']);
 
-        $data = '<div>Successfully imported ' . $newCards . ' cards!</div>';
+        $data = '<div> ✔️ Successfully imported ' . $newCards . ' cards!</div>';
         echo $data;
         die;
     }

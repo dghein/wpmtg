@@ -36,10 +36,6 @@ class Wpmtg
     public function activate()
     {
         $this->PostTypeHelper->registerWpmtgPostType();
-
-        // Get all of the card sets from API and register as taxonomies
-        // Not doing this for now because there are like 900+ sets x_x
-        // $this->PostTypeHelper->createCardSetTerms();
     }
 
     /**
@@ -56,6 +52,9 @@ class Wpmtg
     {
         wp_register_script('wpmtg-admin-js', PLUGIN_PATH . '/js/admin.js', array(), '1.0');
         wp_enqueue_script('wpmtg-admin-js');
+
+        $localizedVars = array('pluginPath' => PLUGIN_PATH);
+        wp_localize_script('wpmtg-admin-js', 'localizedVars', $localizedVars);
     }
 
     /**
