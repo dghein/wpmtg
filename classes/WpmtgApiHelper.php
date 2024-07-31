@@ -112,7 +112,7 @@ class WpmtgApiHelper
                 }
 
                 // Create set taxonomy term if it doesn't already exist
-                if(!term_exists($card_data->set, 'wpmtg_card_setname')) {
+                if (!term_exists($card_data->set, 'wpmtg_card_setname')) {
                     wp_insert_term($card_data->set_name, 'wpmtg_card_setname', array(
                         'slug' => $card_data->set
                     ));
@@ -220,7 +220,7 @@ class WpmtgApiHelper
 
         foreach ($card_remote_uri as $card_face) {
             $ch = curl_init($card_face);
-    
+
             // generate a nice-ish filename and start doing file system stuff
             // wpmtg base uploads folder /uploads/wpmtg/*CARD SET*/*THUMBNAIL SIZE*/
             $base_set_dirname = $upload_dir['basedir'] . '/' . 'wpmtg' . '/' . $card_set . '/' . $thumbnail_size;
@@ -229,29 +229,29 @@ class WpmtgApiHelper
             if (!$extension) {
                 $extension = 'png';
             }
-    
+
             // name comes from somewhere else if double-sided
             if ($double_sided) {
                 $card_name = $card->card_faces[$i]->name;
             } else {
                 $card_name = $card_set . '_' . str_replace([' ', '\'', ',', '/'], ['_', '', '', ''], $card->name);
             }
-    
+
             $card_nicename = mb_ereg_replace("([^\w\s\d\-_~,;\[\]\(\).])", '', $card_name);
             $card_nicername = $card_nicename . '.' . $extension;
             $card_image_path = $base_set_dirname . '/' . $card_nicername; // full path including filename
-    
+
             // make directory if it doesn't exist
             if (!file_exists($base_set_dirname)) {
                 wp_mkdir_p($base_set_dirname);
             }
-    
+
             $fp = fopen($card_image_path, 'wb');
-    
+
             curl_setopt($ch, CURLOPT_HEADER, 0);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($ch, CURLOPT_FILE, $fp);
-    
+
             $result = curl_exec($ch);
 
             if (!$result) {
@@ -259,24 +259,24 @@ class WpmtgApiHelper
                 var_dump(curl_error($ch));
                 echo "</pre>";
             }
-    
+
             $wp_filetype = wp_check_filetype($card_image_path, null);
-    
+
             $attachment = array(
                 'post_mime_type' => $wp_filetype['type'],
                 'post_title' => sanitize_file_name($card_image_path),
                 'post_content' => '',
                 'post_status' => 'inherit'
             );
-    
+
             $attach_id = wp_insert_attachment($attachment, $card_image_path);
             require_once(ABSPATH . 'wp-admin/includes/image.php');
             $attach_data = wp_generate_attachment_metadata($attach_id, $card_image_path);
             $attachment = wp_update_attachment_metadata($attach_id, $attach_data);
-    
+
             curl_close($ch);
             fclose($fp);
-    
+
             $i++;
         }
 
@@ -298,9 +298,57 @@ class WpmtgApiHelper
         return $setData;
     }
 
+    /**
+     * Function to filter sets based on type and release date
+     *
+     * @param [type] $setsData
+     * @param [type] $targetDate
+     * @return void
+     */
+    public function filterSets($setsData, $targetDate)
+    {
+        $filteredSets = [];
+
+        // echo "<pre>";
+        // var_dump($setsData);
+        // echo "</pre>";
+        // die;
+        foreach ($setsData as $set) {
+            
+            $releaseDate = new \DateTime($set->released_at);
+            $targetDateObj = new \DateTime($targetDate);
+
+            if (($set->set_type === 'core' || $set->set_type === 'expansion') &&
+                $releaseDate >= $targetDateObj
+            ) {
+                $filteredSets[] = $set;
+            }
+        }
+
+        return $filteredSets;
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @return void
+     */
     public function doApiThings()
     {
-        $newCards = $this->fetchScryfallDataAndSave($_REQUEST['set']);
+        ini_set('max_execution_time', 0);
+
+        // get a whole format instead of a single set
+        if ($_REQUEST['set'] === 'pioneer') {
+            $sets = $this->getCardSets();
+            $setsData = $sets->data;
+            $filteredSets = $this->filterSets($setsData, '2012-10-05');
+
+            foreach ($filteredSets as $set) {
+                $this->fetchScryfallDataAndSave($set->code);
+            }
+        } else {
+            $newCards = $this->fetchScryfallDataAndSave($_REQUEST['set']);
+        }
 
         $data = '<div> ✔️ Successfully imported ' . $newCards . ' cards!</div>';
         echo $data;

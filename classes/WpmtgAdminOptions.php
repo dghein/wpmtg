@@ -2,12 +2,10 @@
 
 namespace Wpmtg;
 
-use Wpmtg\WpmtgApiHelper;
-
 class WpmtgAdminOptions
 {
     /**
-     * Undocumented function
+     * Create an admin menu item pointing to a the plugin's 'Card Importer' tool
      *
      * @return void
      */
@@ -25,7 +23,7 @@ class WpmtgAdminOptions
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
 
-        ini_set('max_execution_time', '300'); //300 seconds
+        ini_set('max_execution_time', 0); // because big request
 
         echo '<h1>WPMTG Card Importer</h1>';
         echo '<p>Import full card sets to WordPress by entering a set code in the field below. <a href="https://www.scryfall.com/sets" target="_blank">Click here for a full list of set codes</a>.</p>';
