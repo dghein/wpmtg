@@ -32,7 +32,7 @@ class WpmtgApiHelper
             $more_set_json = self::fetchScryfallData($next_page);
             $newCards += self::saveCardData($more_set_json);
 
-            // not likely for a single set... probably a more elegant way to go about this
+            // not likely to 'have even more' for a single card set... probably a more elegant way to go about this
             $has_even_more = $more_set_json->has_more;
 
             if ($has_even_more) {
@@ -84,7 +84,7 @@ class WpmtgApiHelper
         foreach ($set_data->data as $card_data) {
             // error check for existing post of type `wpmtg_magiccard` of the same name
             // if duplicate exists, check set taxonomy. if that also matches, then
-            // don't insert the post because it will be a duplicate of an existing post
+            // don't insert the post because it will probably be a duplicate of an existing post
             $post_exists = post_exists($card_data->name, '', '', 'wpmtg_magiccard');
 
             if ($post_exists) {
@@ -127,7 +127,10 @@ class WpmtgApiHelper
                 // check if double-sided
                 !empty($card_data->card_faces) ? $double_sided = true : $double_sided = false;
 
+                // assign card image as the post thumbnail
                 set_post_thumbnail($new_post, $card_image);
+
+                // put the image path in a postmeta field
                 $card_image_path = wp_get_attachment_url($card_image);
 
                 // populate custom fields
@@ -177,7 +180,7 @@ class WpmtgApiHelper
     }
 
     /**
-     * Transfers images from remote url to WP uploads directory and attach to post as featured image
+     * Transfers card images from remote url to WP uploads directory and attaches to post as featured image
      */
     private static function fetchCardThumbnails($card, $thumbnail_size)
     {
@@ -215,9 +218,9 @@ class WpmtgApiHelper
             $card_remote_uri = [$card->image_uris->$thumbnail_size];
         }
 
+        $i = 0;
+        
         // retrieve card images from remote and write to local file system
-        $i = 0; // counter because of sloppy coding :P
-
         foreach ($card_remote_uri as $card_face) {
             $ch = curl_init($card_face);
 
@@ -260,8 +263,10 @@ class WpmtgApiHelper
                 echo "</pre>";
             }
 
+            // get some file information to create an entry in the media library
             $wp_filetype = wp_check_filetype($card_image_path, null);
 
+            // more media library attachment info
             $attachment = array(
                 'post_mime_type' => $wp_filetype['type'],
                 'post_title' => sanitize_file_name($card_image_path),
@@ -269,6 +274,7 @@ class WpmtgApiHelper
                 'post_status' => 'inherit'
             );
 
+            // insert into media library and set-up some metadata for it
             $attach_id = wp_insert_attachment($attachment, $card_image_path);
             require_once(ABSPATH . 'wp-admin/includes/image.php');
             $attach_data = wp_generate_attachment_metadata($attach_id, $card_image_path);
@@ -279,7 +285,6 @@ class WpmtgApiHelper
 
             $i++;
         }
-
 
         return $attach_id;
     }
@@ -299,7 +304,7 @@ class WpmtgApiHelper
     }
 
     /**
-     * Function to filter sets based on type and release date
+     * Filter sets based on type (core, expansion) and release date
      *
      * @param [type] $setsData
      * @param [type] $targetDate
@@ -309,12 +314,7 @@ class WpmtgApiHelper
     {
         $filteredSets = [];
 
-        // echo "<pre>";
-        // var_dump($setsData);
-        // echo "</pre>";
-        // die;
         foreach ($setsData as $set) {
-            
             $releaseDate = new \DateTime($set->released_at);
             $targetDateObj = new \DateTime($targetDate);
 
@@ -335,18 +335,17 @@ class WpmtgApiHelper
      */
     public function doApiThings()
     {
-        ini_set('max_execution_time', 0);
-
-        // get a whole format instead of a single set
-        if ($_REQUEST['set'] === 'pioneer') {
+        // get cards by release date if data param is specified
+        if ($_REQUEST['date']) {
             $sets = $this->getCardSets();
             $setsData = $sets->data;
-            $filteredSets = $this->filterSets($setsData, '2012-10-05');
+            $filteredSets = $this->filterSets($setsData, $_REQUEST['date']);
 
             foreach ($filteredSets as $set) {
-                $this->fetchScryfallDataAndSave($set->code);
+                $newCards = $this->fetchScryfallDataAndSave($set->code);
             }
         } else {
+            // otherwise get cards by set code
             $newCards = $this->fetchScryfallDataAndSave($_REQUEST['set']);
         }
 

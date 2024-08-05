@@ -23,7 +23,7 @@ class WpmtgAdminOptions
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
 
-        ini_set('max_execution_time', 0); // because big request
+        ini_set('max_execution_time', 500); // because big request
 
         echo '<h1>WPMTG Card Importer</h1>';
         echo '<p>Import full card sets to WordPress by entering a set code in the field below. <a href="https://www.scryfall.com/sets" target="_blank">Click here for a full list of set codes</a>.</p>';
@@ -32,11 +32,24 @@ class WpmtgAdminOptions
         echo '<div class="wrap">';
         echo '  <form action="" method="post" id="frmImport">';
         echo '    <fieldset id="frmImportFieldset">';
-        echo '      <legend>Card Set Importer</legend>';
+        echo '      <legend>Import By:</legend>';
         echo '      <input type="hidden" name="action" value="import_wpmtg_card_set">';
-        echo '      <input type="text" name="set" id="importFormFieldSetCode">';
-        echo '      <input type="submit" value="Import Cards" class="button-primary" id="importFormSubmitButton">';
+
+        // option to import by set-code
+        echo '      <input type="radio" name="import_method" value="setcode" class="card-import-form__import-methods" id="importMethodSetCode" data-toggle="importFormFieldSetCode" checked>';
+        echo '      <label for="importMethodSetCode">Set Code</label>';
+
+        // option to import by date
+        echo '      <input type="radio" name="import_method" value="setdate" class="card-import-form__import-methods" id="importMethodSetDate" data-toggle="importFormFieldSetDate">';
+        echo '      <label for="importMethodSetDate">Date</label>';
         echo '    </fieldset>';
+        
+        // input fields
+        echo '    <input type="text" name="set" class="card-import-form__input" id="importFormFieldSetCode">';
+        echo '    <input type="date" name="date" class="card-import-form__input" id="importFormFieldSetDate">';
+
+        // submit
+        echo '    <input type="submit" value="Import Cards" class="button-primary" id="importFormSubmitButton">';
         echo '  </form>';
         echo '</div>';
 

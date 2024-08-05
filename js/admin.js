@@ -1,12 +1,43 @@
 document.addEventListener("DOMContentLoaded", (e) => {
+  /**
+   * WP Admin WPMTG Card Importer tool
+   */
   const wpmtgImportSetForm = document.querySelector('#frmImport');
-
+  
   if (wpmtgImportSetForm) {
+    const wpmtgImportMethods = document.querySelectorAll('.card-import-form__import-methods');
+    const allInputs = document.querySelectorAll('.card-import-form__input');
+
+    // hide all the inputs except the first 
+    allInputs.forEach((input, index) => {
+      if (index !== 0) {
+        input.style.display = "none";
+      }
+    });
+
+    // show/hide inputs based on the input method that has been selected
+    wpmtgImportMethods.forEach(item => {
+      item.addEventListener('click', (e) => {
+        // show corresponding input field
+        let inputId = item.dataset.toggle;
+        let thisInput = document.querySelector(`#${inputId}`);
+
+        allInputs.forEach(input => {
+          input.style.display = "none";
+          input.value = '';
+        });
+
+        thisInput.style.display = "inline-block";
+      })
+    })
+
+    // handle card import form submission
     wpmtgImportSetForm.addEventListener("submit", (e) => {
       e.preventDefault();
 
       const form = document.querySelector('#frmImport');
       const formInputSet = document.querySelector('#importFormFieldSetCode');
+      const formInputDate = document.querySelector('#importFormFieldSetDate');
       const formInputSubmit = document.querySelector('#importFormSubmitButton');
       const requestStatusContainer = document.querySelector('.wpmtg-request-status');
 
@@ -37,6 +68,7 @@ document.addEventListener("DOMContentLoaded", (e) => {
 
       // disable the form until request is complete
       formInputSet.setAttribute('readonly', 'readonly');
+      formInputDate.setAttribute('readonly', 'readonly');
       formInputSubmit.setAttribute('disabled', 'disabled');
       
       // fetch request to import cards
@@ -51,6 +83,7 @@ document.addEventListener("DOMContentLoaded", (e) => {
       }).then(data => {
         newDiv.innerHTML = data;
         formInputSet.removeAttribute('readonly');
+        formInputDate.removeAttribute('readonly');
         formInputSet.value = '';
         formInputSubmit.removeAttribute('disabled');
       })
