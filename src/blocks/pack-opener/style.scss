@@ -1,12 +1,87 @@
-/**
- * The following styles get applied both on the front of your site
- * and in the editor.
- *
- * Replace them with your own styles or remove the file completely.
- */
+.wp-block-wpmtg-pack-opener {
+	padding: 1.5rem;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
 
-.wp-block-create-block-pack-opener {
-	background-color: #21759b;
+.wpmtg-pack-opener__notice {
+	margin: 0;
+	color: #646970;
+}
+
+.wpmtg-pack-opener__set-label {
+	margin: 0 0 1rem;
+	font-weight: 600;
+}
+
+.wpmtg-pack-opener__editor-hint {
+	margin: 0.75rem 0 0;
+	font-size: 0.875rem;
+	color: #646970;
+}
+
+.wpmtg-pack-opener__button {
+	padding: 0.625rem 1.25rem;
+	font-size: 1rem;
+	cursor: pointer;
+	border: none;
+	border-radius: 4px;
+	background: #1e1e1e;
 	color: #fff;
-	padding: 2px;
+}
+
+.wpmtg-pack-opener__button:hover:not(:disabled) {
+	background: #333;
+}
+
+.wpmtg-pack-opener__button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.wpmtg-pack-opener__cards {
+	margin-top: 1.5rem;
+}
+
+.wpmtg-pack-opener__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	gap: 1rem;
+}
+
+.wpmtg-pack-opener__card {
+	display: flex;
+	flex-direction: column;
+	gap: 0.375rem;
+}
+
+.wpmtg-pack-opener__card-link {
+	display: flex;
+	flex-direction: column;
+	gap: 0.375rem;
+	color: inherit;
+	text-decoration: none;
+}
+
+.wpmtg-pack-opener__card-link:hover .wpmtg-pack-opener__card-name {
+	text-decoration: underline;
+}
+
+.wpmtg-pack-opener__card-image {
+	width: 100%;
+	height: auto;
+	border-radius: 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.wpmtg-pack-opener__card-name {
+	font-size: 0.8125rem;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.wpmtg-pack-opener__card-rarity {
+	font-size: 0.75rem;
+	color: #646970;
+	text-transform: capitalize;
 }

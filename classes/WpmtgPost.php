@@ -66,7 +66,8 @@ class WpmtgPost
                     'with_front' => false
                 ),
                 'query_var' => 'wpmtg_card_setname',
-                'show_in_nav_menus' => true
+                'show_in_nav_menus' => true,
+                'show_in_rest' => true
             )
         );
     }

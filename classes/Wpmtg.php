@@ -12,6 +12,7 @@ class Wpmtg
     private $ApiHelper;
     private $PostTypeHelper;
     private $BlocksHelper;
+    private $RestApi;
 
     public function __construct()
     {
@@ -19,6 +20,7 @@ class Wpmtg
         $this->AdminHelper = new WpmtgAdminOptions();
         $this->ApiHelper = new WpmtgApiHelper();
         $this->BlocksHelper = new WpmtgBlocks();
+        $this->RestApi = new WpmtgRestApi();
 
         $this->addActions();
     }
@@ -74,6 +76,10 @@ class Wpmtg
 
         // gutenberg blocks
         add_action('init', [$this->BlocksHelper, 'registerBlocks']);
+        add_action('wp_enqueue_scripts', [$this->BlocksHelper, 'localizePackOpenerScript'], 100);
+
+        // rest api
+        add_action('rest_api_init', [$this->RestApi, 'registerRoutes']);
 
         // admin scripts + styles
         add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);

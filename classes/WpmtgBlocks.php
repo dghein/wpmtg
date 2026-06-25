@@ -4,6 +4,8 @@ namespace Wpmtg;
 
 class WpmtgBlocks
 {
+    private const PACK_OPENER_VIEW_HANDLE = 'wpmtg-pack-opener-view-script';
+
     public function registerBlocks(): void
     {
         $build_dir = dirname(__DIR__) . '/build/blocks';
@@ -30,5 +32,20 @@ class WpmtgBlocks
         foreach (glob($build_dir . '/*/block.json') ?: [] as $block_json) {
             register_block_type_from_metadata(dirname($block_json));
         }
+    }
+
+    public function localizePackOpenerScript(): void
+    {
+        if (is_admin() || !has_block('wpmtg/pack-opener')) {
+            return;
+        }
+
+        if (!wp_script_is(self::PACK_OPENER_VIEW_HANDLE, 'registered')) {
+            return;
+        }
+
+        wp_localize_script(self::PACK_OPENER_VIEW_HANDLE, 'wpmtgPackOpener', [
+            'restUrl' => rest_url('wpmtg/v1/pack'),
+        ]);
     }
 }
