@@ -11,12 +11,14 @@ class Wpmtg
     private $AdminHelper;
     private $ApiHelper;
     private $PostTypeHelper;
+    private $BlocksHelper;
 
     public function __construct()
     {
         $this->PostTypeHelper = new WpmtgPost();
         $this->AdminHelper = new WpmtgAdminOptions();
         $this->ApiHelper = new WpmtgApiHelper();
+        $this->BlocksHelper = new WpmtgBlocks();
 
         $this->addActions();
     }
@@ -69,6 +71,9 @@ class Wpmtg
     {
         // wpmtg_magiccard post-type registration
         add_action('init', [$this->PostTypeHelper, 'registerWpmtgPostType']);
+
+        // gutenberg blocks
+        add_action('init', [$this->BlocksHelper, 'registerBlocks']);
 
         // admin scripts + styles
         add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
