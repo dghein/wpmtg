@@ -7,7 +7,10 @@ namespace Wpmtg;
  */
 class WpmtgApiHelper
 {
+    /** @var string WordPress transient key for the cached Scryfall /sets response */
     private const CARD_SETS_TRANSIENT = 'wpmtg_scryfall_card_sets';
+
+    /** @var int Cache lifetime — Scryfall set metadata changes infrequently */
     private const CARD_SETS_CACHE_TTL = DAY_IN_SECONDS;
 
     /**
@@ -305,6 +308,7 @@ class WpmtgApiHelper
             return $cached;
         }
 
+        // Cache miss — fetch from Scryfall and store locally to avoid hitting the API on every request.
         $endpoint = 'https://api.scryfall.com/sets';
         $setData = self::fetchScryfallData($endpoint);
 

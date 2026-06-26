@@ -26,6 +26,8 @@ class WpmtgRestApi
             ],
         ]);
 
+        // Proxies the Scryfall set catalog for the admin set selector UI.
+        // Returns only { code, name } per set — full data is cached via WpmtgApiHelper::getCardSets().
         register_rest_route('wpmtg/v1', '/sets', [
             'methods' => \WP_REST_Server::READABLE,
             'callback' => [$this, 'getSets'],
@@ -52,6 +54,8 @@ class WpmtgRestApi
     }
 
     /**
+     * Return a trimmed list of Scryfall sets for the admin set selector.
+     *
      * @return \WP_REST_Response|\WP_Error
      */
     public function getSets(\WP_REST_Request $request)
@@ -66,6 +70,7 @@ class WpmtgRestApi
             );
         }
 
+        // Strip to the two fields the React selector needs.
         $sets = array_map(static function ($set) {
             return [
                 'code' => $set->code,
