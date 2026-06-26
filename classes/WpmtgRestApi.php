@@ -25,6 +25,15 @@ class WpmtgRestApi
                 ],
             ],
         ]);
+
+        register_rest_route('wpmtg/v1', '/sets', [
+            'methods' => \WP_REST_Server::READABLE,
+            'callback' => [$this, 'getSets'],
+            // Public read: set names/codes are public Scryfall catalog data.
+            // WordPress REST cookie auth also requires a nonce, so manage_options
+            // blocks direct browser testing even for logged-in admins.
+            'permission_callback' => '__return_true',
+        ]);
     }
 
     /**
@@ -40,5 +49,30 @@ class WpmtgRestApi
         }
 
         return rest_ensure_response($result);
+    }
+
+    /**
+     * @return \WP_REST_Response|\WP_Error
+     */
+    public function getSets(\WP_REST_Request $request)
+    {
+        $setsData = WpmtgApiHelper::getCardSets();
+
+        if (!$setsData || !isset($setsData->data) || !is_array($setsData->data)) {
+            return new \WP_Error(
+                'wpmtg_sets_fetch_failed',
+                __('Unable to fetch card sets.', 'wpmtg'),
+                ['status' => 502]
+            );
+        }
+
+        $sets = array_map(static function ($set) {
+            return [
+                'code' => $set->code,
+                'name' => $set->name,
+            ];
+        }, $setsData->data);
+
+        return rest_ensure_response($sets);
     }
 }
