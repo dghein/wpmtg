@@ -7,6 +7,9 @@ namespace Wpmtg;
  */
 class WpmtgApiHelper
 {
+    private const CARD_SETS_TRANSIENT = 'wpmtg_scryfall_card_sets';
+    private const CARD_SETS_CACHE_TTL = DAY_IN_SECONDS;
+
     /**
      * Get card data from Scryfall and save card information to posts
      *
@@ -290,15 +293,24 @@ class WpmtgApiHelper
     }
 
     /**
-     * Undocumented function
+     * Fetch all card sets from Scryfall, cached locally for 24 hours.
      *
-     * @param string $endpoint
-     * @return void
+     * @return object|null
      */
     public static function getCardSets()
     {
+        $cached = get_transient(self::CARD_SETS_TRANSIENT);
+
+        if ($cached !== false) {
+            return $cached;
+        }
+
         $endpoint = 'https://api.scryfall.com/sets';
         $setData = self::fetchScryfallData($endpoint);
+
+        if ($setData && isset($setData->data) && is_array($setData->data)) {
+            set_transient(self::CARD_SETS_TRANSIENT, $setData, self::CARD_SETS_CACHE_TTL);
+        }
 
         return $setData;
     }
