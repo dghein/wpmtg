@@ -10,6 +10,12 @@
 import { createRoot, useEffect, useMemo, useRef, useState } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
 
+// Bedrock (and some installs) serve REST at home_url('/wp-json/') rather than WP_SITEURL.
+// PHP passes the correct root via wpmtgAdmin.restRoot in Wpmtg::enqueueAdminScripts().
+if (window.wpmtgAdmin?.restRoot) {
+	apiFetch.use( apiFetch.createRootURLMiddleware( window.wpmtgAdmin.restRoot ) );
+}
+
 // DOM ids shared with WpmtgAdminOptions.php and js/admin.js — keep these in sync.
 const ROOT_ID = 'wpmtg-set-selector-root';
 const HIDDEN_INPUT_ID = 'importFormFieldSetCode';

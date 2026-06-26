@@ -53,14 +53,46 @@ class Wpmtg
         // nothing so far but will eventually be cleanup file, database, etc.
     }
 
-    public function enqueueAdminScripts()
+    /**
+     * Load admin scripts only on the Card Importer page.
+     *
+     * @param string $hook_suffix WordPress admin screen id (e.g. wpmtg_magiccard_page_wpmtg-card-importer).
+     */
+    public function enqueueAdminScripts($hook_suffix)
     {
+        if ($hook_suffix !== 'wpmtg_magiccard_page_wpmtg-card-importer') {
+            return;
+        }
+
+        // Plain JS: form toggle + AJAX import handler.
         wp_register_script('wpmtg-admin-js', PLUGIN_PATH . '/js/admin.js', array(), '1.0');
         wp_enqueue_script('wpmtg-admin-js');
 
-        // make some plugin variables and constants available in javascript
-        $localizedVars = array('pluginPath' => PLUGIN_PATH);
-        wp_localize_script('wpmtg-admin-js', 'localizedVars', $localizedVars);
+        wp_localize_script('wpmtg-admin-js', 'localizedVars', [
+            'pluginPath' => PLUGIN_PATH,
+        ]);
+
+        // React set selector — built by wp-scripts to build/admin-set-selector/.
+        $asset_file = dirname(__DIR__) . '/build/admin-set-selector/index.asset.php';
+
+        if (!file_exists($asset_file)) {
+            return;
+        }
+
+        $asset = require $asset_file;
+
+        wp_enqueue_script(
+            'wpmtg-set-selector',
+            PLUGIN_PATH . 'build/admin-set-selector/index.js',
+            $asset['dependencies'],
+            $asset['version'],
+            true
+        );
+
+        // Bedrock serves REST at home_url('/wp-json/'), not rest_url() under /wp/.
+        wp_localize_script('wpmtg-set-selector', 'wpmtgAdmin', [
+            'restRoot' => esc_url_raw(home_url('/wp-json/')),
+        ]);
     }
 
     /**
