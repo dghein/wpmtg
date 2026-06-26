@@ -20,8 +20,10 @@ if (window.wpmtgAdmin?.restRoot) {
 const ROOT_ID = 'wpmtg-set-selector-root';
 const HIDDEN_INPUT_ID = 'importFormFieldSetCode';
 
-// Cap dropdown length so rendering stays fast with 800+ sets loaded.
-const MAX_RESULTS = 50;
+// How many sets to render initially and on each scroll-to-load batch.
+const PAGE_SIZE = 50;
+// Pixels from the bottom of the dropdown that trigger loading the next batch.
+const SCROLL_THRESHOLD = 20;
 
 function SetSelector() {
 	// Full set list from the REST API: [{ code, name }, ...]
@@ -36,6 +38,8 @@ function SetSelector() {
 	const [ error, setError ] = useState( '' );
 	// Locked during card import so the user cannot change their selection mid-request.
 	const [ isDisabled, setIsDisabled ] = useState( false );
+	// How many matching sets are currently rendered (grows as the user scrolls).
+	const [ displayCount, setDisplayCount ] = useState( PAGE_SIZE );
 	// Reference to the wrapper div — used to detect clicks outside the component.
 	const containerRef = useRef( null );
 
@@ -85,6 +89,7 @@ function SetSelector() {
 		const handleReset = () => {
 			setQuery( '' );
 			setIsOpen( false );
+			setDisplayCount( PAGE_SIZE );
 
 			const hiddenInput = document.getElementById( HIDDEN_INPUT_ID );
 			if ( hiddenInput ) {
@@ -133,28 +138,53 @@ function SetSelector() {
 		};
 	}, [] );
 
+	// Reset scroll-to-load window whenever the search query changes.
+	useEffect( () => {
+		setDisplayCount( PAGE_SIZE );
+	}, [ query ] );
+
 	/**
-	 * Derive the dropdown list from the search query.
-	 * Re-runs only when `query` or `sets` change (useMemo avoids filtering on every render).
+	 * Sort and filter the full set list.
+	 * Returns every matching set (not sliced) so scroll-to-load can paginate through it.
 	 */
-	const filteredSets = useMemo( () => {
+	const sortedFilteredSets = useMemo( () => {
 		const normalizedQuery = query.trim().toLowerCase();
 
-		// No search text → show the first N sets as a starting list.
+		const sorted = [ ...sets ].sort( ( a, b ) =>
+			a.name.localeCompare( b.name, undefined, { sensitivity: 'base' } )
+		);
+
 		if ( ! normalizedQuery ) {
-			return sets.slice( 0, MAX_RESULTS );
+			return sorted;
 		}
 
 		// Match against both display name and set code (e.g. "bro" or "brothers' war").
-		return sets
-			.filter( ( set ) => {
-				return (
-					set.name.toLowerCase().includes( normalizedQuery ) ||
-					set.code.toLowerCase().includes( normalizedQuery )
-				);
-			} )
-			.slice( 0, MAX_RESULTS );
+		return sorted.filter( ( set ) => {
+			return (
+				set.name.toLowerCase().includes( normalizedQuery ) ||
+				set.code.toLowerCase().includes( normalizedQuery )
+			);
+		} );
 	}, [ query, sets ] );
+
+	// Only render a batch at a time — displayCount grows when the user scrolls down.
+	const visibleSets = useMemo( () => {
+		return sortedFilteredSets.slice( 0, displayCount );
+	}, [ sortedFilteredSets, displayCount ] );
+
+	const hasMoreSets = visibleSets.length < sortedFilteredSets.length;
+
+	/** Load the next batch when the user scrolls near the bottom of the dropdown. */
+	const handleListScroll = ( event ) => {
+		const list = event.currentTarget;
+		const nearBottom =
+			list.scrollTop + list.clientHeight >=
+			list.scrollHeight - SCROLL_THRESHOLD;
+
+		if ( nearBottom && hasMoreSets ) {
+			setDisplayCount( ( prev ) => prev + PAGE_SIZE );
+		}
+	};
 
 	/** User clicked a set in the dropdown — store the code and update the search field label. */
 	const handleSelect = ( set ) => {
@@ -183,7 +213,7 @@ function SetSelector() {
 				Search for a set
 			</label>
 
-			{ /* Visible search box — filtering happens in `filteredSets` above. */ }
+			{ /* Visible search box — sort/filter in sortedFilteredSets, batch render in visibleSets. */ }
 			<input
 				id="wpmtg-set-selector-input"
 				type="text"
@@ -216,13 +246,17 @@ function SetSelector() {
 
 			{ /* Results dropdown — only shown when open, enabled, and data loaded successfully. */ }
 			{ isOpen && ! isDisabled && ! error && (
-				<ul className="wpmtg-set-selector__list" role="listbox">
-					{ filteredSets.length === 0 ? (
+				<ul
+					className="wpmtg-set-selector__list"
+					role="listbox"
+					onScroll={ handleListScroll }
+				>
+					{ visibleSets.length === 0 ? (
 						<li className="wpmtg-set-selector__empty">
 							No matching sets found.
 						</li>
 					) : (
-						filteredSets.map( ( set ) => (
+						visibleSets.map( ( set ) => (
 							<li key={ set.code }>
 								<button
 									type="button"
@@ -239,6 +273,11 @@ function SetSelector() {
 								</button>
 							</li>
 						) )
+					) }
+					{ hasMoreSets && (
+						<li className="wpmtg-set-selector__scroll-hint" aria-hidden="true">
+							Scroll for more sets…
+						</li>
 					) }
 				</ul>
 			) }
@@ -308,9 +347,17 @@ function SetSelector() {
 				}
 
 				.wpmtg-set-selector__empty,
-				.wpmtg-set-selector__error {
+				.wpmtg-set-selector__error,
+				.wpmtg-set-selector__scroll-hint {
 					margin: 8px 0 0;
 					color: #646970;
+				}
+
+				.wpmtg-set-selector__scroll-hint {
+					padding: 8px 12px;
+					font-size: 12px;
+					font-style: italic;
+					text-align: center;
 				}
 
 				.wpmtg-set-selector__error {
