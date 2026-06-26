@@ -26,26 +26,31 @@ class WpmtgAdminOptions
         ini_set('max_execution_time', 500); // because big request
 
         echo '<h1>WPMTG Card Importer</h1>';
-        echo '<p>Import full card sets to WordPress by entering a set code in the field below. <a href="https://www.scryfall.com/sets" target="_blank">Click here for a full list of set codes</a>.</p>';
+        echo '<p>Import full card sets to WordPress by searching for a set below and selecting it from the list.</p>';
 
-        // the back-end form used to download card images
+        // Card import form — submitted via AJAX in js/admin.js (not a traditional POST).
         echo '<div class="wrap">';
         echo '  <form action="" method="post" id="frmImport">';
         echo '    <fieldset id="frmImportFieldset">';
         echo '      <legend>Import By:</legend>';
         echo '      <input type="hidden" name="action" value="import_wpmtg_card_set">';
 
-        // option to import by set-code
-        echo '      <input type="radio" name="import_method" value="setcode" class="card-import-form__import-methods" id="importMethodSetCode" data-toggle="importFormFieldSetCode" checked>';
+        // Radio toggles which input group is visible (handled by js/admin.js).
+        echo '      <input type="radio" name="import_method" value="setcode" class="card-import-form__import-methods" id="importMethodSetCode" data-toggle="importFormSetCodeField" checked>';
         echo '      <label for="importMethodSetCode">Set Code</label>';
 
-        // option to import by date
         echo '      <input type="radio" name="import_method" value="setdate" class="card-import-form__import-methods" id="importMethodSetDate" data-toggle="importFormFieldSetDate">';
         echo '      <label for="importMethodSetDate">Date</label>';
         echo '    </fieldset>';
-        
-        // input fields
-        echo '    <input type="text" name="set" class="card-import-form__input" id="importFormFieldSetCode">';
+
+        // Set-code import: React UI writes the chosen code into the hidden input on submit.
+        // IDs here must match src/admin-set-selector/index.jsx constants.
+        echo '    <div class="card-import-form__input" id="importFormSetCodeField">';
+        echo '      <input type="hidden" name="set" id="importFormFieldSetCode">';
+        echo '      <div id="wpmtg-set-selector-root"></div>';
+        echo '    </div>';
+
+        // Date import: plain date picker (unchanged from original form).
         echo '    <input type="date" name="date" class="card-import-form__input" id="importFormFieldSetDate">';
 
         // submit
@@ -53,7 +58,7 @@ class WpmtgAdminOptions
         echo '  </form>';
         echo '</div>';
 
-        // display a list of card sets already imported to the site
+        // List sets already imported to this site (stored as taxonomy terms).
         $terms = get_terms(array(
             'taxonomy' => 'wpmtg_card_setname',
             'hide_empty' => false,
